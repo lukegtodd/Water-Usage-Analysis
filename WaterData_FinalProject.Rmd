@@ -1,0 +1,483 @@
+---
+title: "Lab 10"
+author: "Luke Todd"
+date: "3/7/2022"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+---
+```{r setup, include=FALSE, message = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+#### Step 1: Set global options and load packages
+```{r, message = FALSE}
+
+library(tidyverse)
+library(here)
+library(janitor)
+library(readxl)
+
+```
+
+#### Step 2: Import water use data; clean data
+The data for this lab are available from the [United States Geological Survey](https://water.usgs.gov/watuse/data/) for years 1950-2015.
+Table 1: “Sets” of data, for which each of the sets have ALL column tags in common. Data from USGS (1950-2015). 
+
+TABLE FOR PLOT 1: Organizes all the data that shows water use by fresh/saline sources for the industrial sector.
+
+|year|fresh water|saline water|state|
+|:--:|:---------:|:----------:|:---:|
+|1950|inpt_wgw_fr + inpt_wsw_fr|NA|area|
+|1955|inpt_wgw_fr + inpt_wsw_fr|inpt_wgw_sa + inpt_wsw_sa|area|
+|1960-1980|oi_wgw_fr + oi_wsw_fr|oi_wgw_sa + oi_wsw_sa|area|
+|1985-1990|in_wtofr|in_wtosa|scode|
+|1995|in_w_fr_to|in_w_sa_to|state_code|
+|2000-2015|in_w_fr_to|in_w_sa_to|statefips|
+
+TABLE FOR PLOT 2: Lists all the data necessary to show total withdrawal vs. population for each state. Only pull from 2015 data.
+
+|total withdrawals|state|population|
+|:---------------:|:---:|:--------:|
+|to_wtotl|state|tp_tot_pop|
+
+
+```{r, warning = FALSE, error = FALSE, echo = TRUE}
+# Read data for 1950
+d_1950 <- lapply(excel_sheets(here("data/us1950.xlsx")), 
+           function(x) read_excel(here("data/us1950.xlsx"), skip = 3, sheet = x)) %>%
+           reduce(left_join, by = "Area") %>%
+           clean_names() %>%
+           select(-contains("note_industrial_and_thermoelectric_were_combined_in_1950")) %>%
+           mutate(across(2:8, as.numeric))%>%
+           replace(is.na(.), 0)
+
+# Read data for 1955
+d_1955 <- lapply(excel_sheets(here("data/us1955.xlsx")), 
+           function(x) read_excel(here("data/us1955.xlsx"), skip = 3, sheet = x)) %>%
+           reduce(left_join, by = "Area") %>%
+           clean_names() %>%
+           select(-contains("note_industrial_and_thermoelectric_were_combined_in_1955"))%>%
+           mutate(across(2:10, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 1960
+d_1960 <- lapply(excel_sheets(here("data/us1960.xlsx")), 
+           function(x) read_excel(here("data/us1960.xlsx"), skip = 3, sheet = x)) %>%
+           reduce(left_join, by = "Area") %>%
+           clean_names() %>%
+           mutate(across(2:35, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 1965
+d_1965 <- lapply(excel_sheets(here("data/us1965.xlsx")), 
+           function(x) read_excel(here("data/us1965.xlsx"), skip = 3, sheet = x)) %>%
+           reduce(left_join, by = "Area") %>%
+           clean_names() %>%
+           mutate(across(2:33, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 1970
+d_1970 <- lapply(excel_sheets(here("data/us1970.xlsx")), 
+           function(x) read_excel(here("data/us1970.xlsx"), skip = 3, sheet = x)) %>%
+           reduce(left_join, by = "Area") %>%
+           clean_names() %>%
+           slice(1:52)  %>% 
+           mutate(across(2:34, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 1975
+d_1975 <- lapply(excel_sheets(here("data/us1975.xlsx")), 
+           function(x) read_excel(here("data/us1975.xlsx"), skip = 3, sheet = x)) %>%
+           reduce(left_join, by = "Area") %>%
+           clean_names() %>%
+           mutate(across(2:34, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 1980
+d_1980 <- lapply(excel_sheets(here("data/us1980.xlsx")), 
+           function(x) read_excel(here("data/us1980.xlsx"), skip = 3, sheet = x)) %>%
+           reduce(left_join, by = "Area") %>%
+           clean_names() %>%
+           mutate(across(2:34, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 1985
+d_1985 <- read_delim(here("data/us1985.txt")) %>%
+           clean_names() %>%
+           mutate(across(6:163, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 1990
+d_1990 <- read_xls(here("data/us1990.xls")) %>%
+           clean_names() %>%
+           slice(1:3225) %>%
+           mutate(across(6:163, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 1995
+d_1995 <- read_xls(here("data/us1995.xls")) %>%
+           clean_names() %>%
+           mutate(across(c(1, 6:163), as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 2000
+d_2000 <- read_xls(here("data/us2000.xls")) %>%
+           clean_names() %>%
+           mutate(across(5:70, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 2005
+d_2005 <- read_xls(here("data/us2005.xls")) %>%
+           clean_names() %>%
+           mutate(across(6:108, as.numeric)) %>%
+           replace(is.na(.), 0)
+
+# Read data for 2010
+d_2010 <- read_xlsx(here("data/us2010.xlsx")) %>%
+           clean_names() %>%
+           mutate(across(6:117, as.numeric))%>%
+           replace(is.na(.), 0)
+
+# Read data for 2015
+d_2015 <- read_xlsx(here("data/us2015.xlsx"), skip = 1) %>%
+           clean_names() %>%
+           mutate(across(6:141, as.numeric)) %>%
+           replace(is.na(.), 0)
+```
+
+#### Step 3: Organize data by fresh/saline
+```{r, warning = FALSE, error = FALSE, echo = TRUE}
+
+# DATA ORGANIZATION FOR PLOT 1:
+
+# creates data frame for 1950 with new columns that add up to our desired values. used for plot 1
+wu1_1950 <- d_1950 %>%
+  mutate(State = area,
+         Fresh_Water = inpt_wgw_fr + inpt_wsw_fr,
+         Saline_Water = NA,
+         Year = 1950) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1955 with new columns that add up to our desired values. used for plot 1
+wu1_1955 <- d_1955 %>%
+  mutate(State = area,
+         Fresh_Water = inpt_wgw_fr + inpt_wsw_fr,
+         Saline_Water = inpt_wgw_sa + inpt_wsw_sa,
+         Year = 1955) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1960 with new columns that add up to our desired values. used for plot 1
+wu1_1960 <- d_1960 %>%
+  mutate(State = area,
+         Fresh_Water = oi_wgw_fr + oi_wsw_fr,
+         Saline_Water = oi_wgw_sa + oi_wsw_sa,
+         Year = 1960) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1965 with new columns that add up to our desired values. used for plot 1
+wu1_1965 <- d_1965 %>%
+  mutate(State = area,
+         Fresh_Water = oi_wgw_fr + oi_wsw_fr,
+         Saline_Water = oi_wgw_sa + oi_wsw_sa,
+         Year = 1965) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1970 with new columns that add up to our desired values. used for plot 1
+wu1_1970 <- d_1970 %>%
+  mutate(State = area,
+         Fresh_Water = oi_wgw_fr + oi_wsw_fr,
+         Saline_Water = oi_wgw_sa + oi_wsw_sa,
+         Year = 1970) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1975 with new columns that add up to our desired values. used for plot 1
+wu1_1975 <- d_1975 %>%
+  mutate(State = area,
+         Fresh_Water = oi_wgw_fr + oi_wsw_fr,
+         Saline_Water = oi_wgw_sa + oi_wsw_sa,
+         Year = 1975) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1980 with new columns that add up to our desired values. used for plot 1
+wu1_1980 <- d_1980 %>%
+  mutate(State = area,
+         Fresh_Water = oi_wgw_fr + oi_wsw_fr,
+         Saline_Water = oi_wgw_sa + oi_wsw_sa,
+         Year = 1980) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1985 with new columns that add up to our desired values. used for plot 1
+wu1_1985 <- d_1985 %>%
+  mutate(State = scode,
+         Fresh_Water = in_wtofr,
+         Saline_Water = in_wtosa,
+         Year = 1985) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1990 with new columns that add up to our desired values. used for plot 1
+wu1_1990 <- d_1990 %>%
+  mutate(State = scode,
+         Fresh_Water = in_wtofr,
+         Saline_Water = in_wtosa,
+         Year = 1990) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 1995 with new columns that add up to our desired values. used for plot 1
+wu1_1995 <- d_1995 %>%
+  mutate(State = state_code,
+         Fresh_Water = in_w_fr_to,
+         Saline_Water = in_w_sa_to,
+         Year = 1995) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 2000 with new columns that add up to our desired values. used for plot 1
+wu1_2000 <- d_2000 %>%
+  mutate(State = statefips,
+         Fresh_Water = in_w_fr_to,
+         Saline_Water = in_w_sa_to,
+         Year = 2000) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 2005 with new columns that add up to our desired values. used for plot 1
+wu1_2005 <- d_2005 %>%
+  mutate(State = statefips,
+         Fresh_Water = in_w_fr_to,
+         Saline_Water = in_w_sa_to,
+         Year = 2005) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 2010 with new columns that add up to our desired values. used for plot 1
+wu1_2010 <- d_2010 %>%
+  mutate(State = statefips,
+         Fresh_Water = in_w_fr_to,
+         Saline_Water = in_w_sa_to,
+         Year = 2010) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+# creates data frame for 2015 with new columns that add up to our desired values. used for plot 1
+wu1_2015 <- d_2015 %>%
+  mutate(State = statefips,
+         Fresh_Water = in_w_fr_to,
+         Saline_Water = in_w_sa_to,
+         Year = 2015) %>%
+  select(State, Fresh_Water, Saline_Water, Year) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State, Year) %>%
+  summarize(across(1:2, sum)) %>%
+  pivot_longer(3:4, names_to = "Water_Type", values_to = "Withdrawals")
+
+
+# DATA ORGANIZATION FOR PLOT 2
+
+# selects for total withdrawals, population, and state, which are all the columns I will need. descending population order for graphing
+wu2_2015 <- d_2015 %>%
+  mutate(State = state,
+         Total_Withdrawals = to_wtotl,
+         Population = tp_tot_pop) %>%
+  select(State, Total_Withdrawals, Population) %>%
+  replace(is.na(.), 0) %>%
+  group_by(State) %>%
+  summarize(across(1:2, sum)) %>%
+  arrange(., desc(Population))
+
+```
+
+#### Step 4: Organize and combine data for plotting
+```{r, warning = FALSE, error = FALSE, echo = TRUE}
+
+# DATA PREP FOR PLOT 1:
+
+# combines all the wu1_ objects and removes the 3 non-states
+wu1_all <- rbind(wu1_1950, wu1_1955, wu1_1960, wu1_1965, wu1_1970, wu1_1975, wu1_1980, wu1_1985, wu1_1990, wu1_1995, wu1_2000, wu1_2005, wu1_2010, wu1_2015) %>%
+          filter(!State %in% c("72", "11", "78"))
+
+# sums all for the withdrawals for each year
+wu1_all_total <- wu1_all %>%
+                group_by(Year) %>%
+                summarize(across(3, sum))
+
+# sums all withdrawals for fresh/saline for each year 
+wu1_all_type <- wu1_all %>%
+                group_by(Water_Type, Year) %>%
+                summarize(across(2, sum))
+
+
+
+# DATA PREP FOR PLOT 2:
+
+# just created a new dataframe with only State and Population. was running into issues indexing with $
+wu2_population <- wu2_2015 %>%
+  select(State, Population) %>%
+  arrange(., desc(Population))
+
+```
+
+
+#### Step 5: Setup plot 1 for timeseries of water type withdrawals in industrial sector
+```{r, warning = FALSE, error = FALSE, echo = TRUE, fig.width = 10, fig.height = 6}
+
+# this plot is a time series that shows water withdrawals over time in the US. each year is split into the fresh and saline water withdrawals
+# the barplot is overlayed with a line graph that shows the total water withdrawal for industrial (fresh + saline)
+# the overlaying line graph helps show how the total withdrawals is often very reliant on the fresh water withdrawals
+# the line graph also has points for each year, showing the data for total withdrawals for each year
+
+ggplot() + geom_col(data = wu1_all_type, 
+                     aes(x = Year,
+                         y = Withdrawals,
+                         fill = reorder(Water_Type, Withdrawals)),
+                     position = position_dodge(width = 4),
+                     width = 4) +
+            guides(fill=guide_legend(title="")) +
+            scale_fill_brewer() +      # new function scale_fill_brewer()
+            geom_line(data = wu1_all_total,
+                      aes(x = Year,
+                          y = Withdrawals),
+                          size = 2,
+                          color = "grey",
+                      show.legend = FALSE) +
+            scale_x_continuous(breaks = scales::pretty_breaks(n = 14),
+                               expand = c(0, 0)) +
+            scale_y_continuous(breaks = scales::pretty_breaks(n = 10),
+                               labels = scales::comma,
+                               limits = c(0, 120000),
+                               sec.axis = sec_axis(trans = ~.*1, 
+                                        breaks = scales::pretty_breaks(n = 10),
+                                        labels = scales::comma, 
+                                        name = "Total Withdrawals (Mgal/day"),
+                               expand = c(0, 0)) +
+            geom_text(data = wu1_all_total, 
+                      aes(label = Withdrawals, x = Year, y = Withdrawals), 
+                      vjust = -2, 
+                      color="black", 
+                      position = position_dodge(1), 
+                      size=3.5) +     # new function geom_text()
+            geom_point(data = wu1_all_total,
+                       aes(x = Year,
+                           y = Withdrawals),
+                           size = 2,
+                           color = "black",
+                       show.legend = FALSE) +
+            labs(x = "Year",
+                 y = "Sector Withdrawals (Mgal/day)",
+                 caption = "Figure 1: Saline and Fresh Water Withdrawals in the Industrial Sector in the USA 1950-2015. Data from USGS (2015). Created by LUKE TODD.",
+                 fill = "") + 
+            ggplot2::theme_light() +     # new function theme_light()
+            theme(legend.position = "top", 
+                  legend.title = element_text(size = 10, color = "black"),
+                  axis.title.x = element_text(color = "black", size = 8),
+                  axis.text = element_text(color = "black", size = 10),
+                  axis.text.y.right = element_text(color = "grey"),
+                  axis.title.y.right = element_text(color = "grey"),
+                  plot.caption = element_text(hjust = -0.15, size = 14, face = "bold"))
+
+```
+From the above plot, we can see that as time has passed, both the saline and the fresh water withdrawals related to the industrial sector has dropped.
+
+#### Step 6: Setup plot 2: Withdrawals and population for each state
+```{r, warning = FALSE, error = FALSE, echo = TRUE, fig.width = 13, fig.height = 4}
+
+# this plot shows total water withdrawal for each state. the states are arranged in ascending order.
+# on top of the bar plot is a line graph that shows the total population for each state.
+# the goal of the plot is to show a trend between population and state total water withdrawal
+
+ggplot() + geom_col(data = wu2_2015, 
+                     aes(x = reorder(State, Population),
+                         y = Total_Withdrawals,
+                         fill = reorder(State, Population)),
+                     width = 0.5) +
+            guides(fill=guide_legend(title="")) + 
+            geom_line(data = wu2_population,
+                      aes(x = reorder(State, Population),
+                          y = Population, group = 1),
+                          size = 1,
+                          color = "light grey",
+                      show.legend = FALSE) +
+            ggplot2::theme_light() +
+  
+           # decided that a legend was not needed for this plot
+            theme(legend.position = "None", 
+                  legend.title = element_text(size = 10, color = "black"),
+                  axis.title.x = element_text(color = "black", size = 8),
+                  axis.text = element_text(color = "black", size = 10),
+                  axis.text.y.right = element_text(color = "grey"),
+                  axis.title.y.right = element_text(color = "grey"),
+                  plot.caption = element_text(hjust = -0.15, size = 14, face = "bold")) +
+            labs(x = "State (in ascending population)",
+                 y = "Total Withdrawals (Mgal/day)",
+                 caption = "Figure 2: Total water withdrawals for each state in USA. 1950-2015. Data from USGS (2015). Created by LUKE TODD.",
+                 fill = "") +
+              scale_y_continuous(breaks = scales::pretty_breaks(n = 10),
+                               labels = scales::comma,
+                               limits = c(0, 40000),
+                               sec.axis = sec_axis(trans = ~./1000, 
+                                        breaks = scales::pretty_breaks(n = 10),
+                                        labels = scales::comma, 
+                                        name = "Total Population (in millions)"),
+                               expand = c(0, 0))
+
+
+
+```
+
+The above plot shows that on average, as population increases in a state, the total water withdrawals also increases. Some of the interesting outliers are states like Idaho, Montana, and Wyoming. I would assume that their water withdrawals stem mostly from agriculture or industry, since their populations are low relative to their water use.
+
+
+
+
+
