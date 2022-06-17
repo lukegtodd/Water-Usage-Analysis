@@ -5,7 +5,6 @@ date: "3/7/2022"
 output: 
   html_document:
     code_folding: hide
-    toc: true
 ---
 ```{r setup, include=FALSE, message = FALSE}
 
@@ -460,7 +459,7 @@ ggplot() + geom_col(data = wu2_2015,
                   plot.caption = element_text(hjust = -0.15, size = 14, face = "bold")) +
             labs(x = "State (in ascending population)",
                  y = "Total Withdrawals (Mgal/day)",
-                 caption = "Figure 2: Total water withdrawals for each state in USA. 1950-2015. Data from USGS (2015). Created by LUKE TODD.",
+                 caption = "Figure 2: Total water withdrawals for each state in USA in 2015. Data from USGS (2015). Created by LUKE TODD.",
                  fill = "") +
               scale_y_continuous(breaks = scales::pretty_breaks(n = 10),
                                labels = scales::comma,
